@@ -8,7 +8,7 @@ apps:
         soft: []
       deployment:
         auto: true
-        image: change me/neuroglancer:ca766a2b1677e3bca1c127964ce29cde9bc4fef3
+        image: change me /neuroglancer:ca766a2b1677e3bca1c127964ce29cde9bc4fef3
         name: neuroglancer
         port: 8080
         replicas: 1

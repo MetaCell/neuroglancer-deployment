@@ -2,9 +2,7 @@ version: '1.0'
 stages:
 - prepare
 - build
-- unittest
 - deploy
-- qa
 - publish
 steps:
   main_clone:
@@ -56,8 +54,8 @@ steps:
         build_arguments:
         - DOMAIN=${{DOMAIN}}
         - NOCACHE=${{CF_BUILD_ID}}
-        - REGISTRY=${{REGISTRY}}/change me/
-        image_name: change me/cloudharness-base
+        - REGISTRY=${{REGISTRY}}/neuroglancer/
+        image_name: neuroglancer/cloudharness-base
         title: Cloudharness base
         working_directory: ./cloud-harness
         tag: '${{CLOUDHARNESS_BASE_TAG}}'
@@ -77,8 +75,8 @@ steps:
         build_arguments:
         - DOMAIN=${{DOMAIN}}
         - NOCACHE=${{CF_BUILD_ID}}
-        - REGISTRY=${{REGISTRY}}/change me/
-        image_name: change me/cloudharness-frontend-build
+        - REGISTRY=${{REGISTRY}}/neuroglancer/
+        image_name: neuroglancer/cloudharness-frontend-build
         title: Cloudharness frontend build
         working_directory: ./cloud-harness
         tag: '${{CLOUDHARNESS_FRONTEND_BUILD_TAG}}'
@@ -98,8 +96,8 @@ steps:
         build_arguments:
         - DOMAIN=${{DOMAIN}}
         - NOCACHE=${{CF_BUILD_ID}}
-        - REGISTRY=${{REGISTRY}}/change me/
-        image_name: change me/cloudharness-base-debian
+        - REGISTRY=${{REGISTRY}}/neuroglancer/
+        image_name: neuroglancer/cloudharness-base-debian
         title: Cloudharness base debian
         working_directory: ./cloud-harness
         tag: '${{CLOUDHARNESS_BASE_DEBIAN_TAG}}'
@@ -110,8 +108,8 @@ steps:
                 '{{CLOUDHARNESS_BASE_DEBIAN_TAG_EXISTS}}') == true
               forceNoCache: includes('${{CLOUDHARNESS_BASE_DEBIAN_TAG_FORCE_BUILD}}',
                 '{{CLOUDHARNESS_BASE_DEBIAN_TAG_FORCE_BUILD}}') == false
-  build_static_images:
-    title: Build static images
+  build_container_image:
+    title: Build Container Image
     type: parallel
     stage: build
     steps:
@@ -124,10 +122,9 @@ steps:
         build_arguments:
         - DOMAIN=${{DOMAIN}}
         - NOCACHE=${{CF_BUILD_ID}}
-        - REGISTRY=${{REGISTRY}}/change me/
-        - CLOUDHARNESS_BASE=${{REGISTRY}}/change me/cloudharness-base:${{CLOUDHARNESS_BASE_TAG}}
-        image_name: change me/cloudharness-flask
-        title: Cloudharness flask
+        - REGISTRY=${{REGISTRY}}/neuroglancer
+        image_name: neuroglancer
+        title: Neuroglancer
         working_directory: ./applications/neuroglancer/
   deployment:
     stage: deploy
@@ -135,7 +132,7 @@ steps:
     working_directory: ./${{CF_REPO_NAME}}
     title: Installing chart
     arguments:
-      helm_version: 3.6.2
+      helm_version: 3.9.3
       chart_name: deployment/helm
       release_name: '${{NAMESPACE}}'
       kube_context: '${{CLUSTER_NAME}}'
@@ -145,71 +142,15 @@ steps:
       custom_value_files:
       - ./deployment/helm/values.yaml
       custom_values: []
-  approval:
-    type: pending-approval
-    stage: publish
-    title: Approve build
-    description: Approve build release and tagging
-    timeout:
-      duration: 168
-      finalState: denied
   publish:
     type: parallel
     stage: publish
     steps:
-      publish_cloudharness-base:
-        stage: publish
-        type: push
-        title: Cloudharness base
-        candidate: '${{REGISTRY}}/change me/cloudharness-base:${{CLOUDHARNESS_BASE_TAG}}'
-        tags:
-        - '${{DEPLOYMENT_PUBLISH_TAG}}'
-        registry: '${{REGISTRY_PUBLISH_URL}}'
-      publish_cloudharness-frontend-build:
-        stage: publish
-        type: push
-        title: Cloudharness frontend build
-        candidate: '${{REGISTRY}}/change me/cloudharness-frontend-build:${{CLOUDHARNESS_FRONTEND_BUILD_TAG}}'
-        tags:
-        - '${{DEPLOYMENT_PUBLISH_TAG}}'
-        registry: '${{REGISTRY_PUBLISH_URL}}'
-      publish_cloudharness-base-debian:
-        stage: publish
-        type: push
-        title: Cloudharness base debian
-        candidate: '${{REGISTRY}}/change me/cloudharness-base-debian:${{CLOUDHARNESS_BASE_DEBIAN_TAG}}'
-        tags:
-        - '${{DEPLOYMENT_PUBLISH_TAG}}'
-        registry: '${{REGISTRY_PUBLISH_URL}}'
-      publish_cloudharness-flask:
-        stage: publish
-        type: push
-        title: Cloudharness flask
-        candidate: '${{REGISTRY}}/change me/cloudharness-flask:${{CLOUDHARNESS_FLASK_TAG}}'
-        tags:
-        - '${{DEPLOYMENT_PUBLISH_TAG}}'
-        registry: '${{REGISTRY_PUBLISH_URL}}'
-      publish_cloudharness-django:
-        stage: publish
-        type: push
-        title: Cloudharness django
-        candidate: '${{REGISTRY}}/change me/cloudharness-django:${{CLOUDHARNESS_DJANGO_TAG}}'
-        tags:
-        - '${{DEPLOYMENT_PUBLISH_TAG}}'
-        registry: '${{REGISTRY_PUBLISH_URL}}'
-      publish_cloudharness-fastapi:
-        stage: publish
-        type: push
-        title: Cloudharness fastapi
-        candidate: '${{REGISTRY}}/change me/cloudharness-fastapi:${{CLOUDHARNESS_FASTAPI_TAG}}'
-        tags:
-        - '${{DEPLOYMENT_PUBLISH_TAG}}'
-        registry: '${{REGISTRY_PUBLISH_URL}}'
       publish_neuroglancer:
         stage: publish
         type: push
         title: Neuroglancer
-        candidate: '${{REGISTRY}}/change me/neuroglancer:${{NEUROGLANCER_TAG}}'
+        candidate: '${{REGISTRY}}/neuroglancer:${{NEUROGLANCER_TAG}}'
         tags:
         - '${{DEPLOYMENT_PUBLISH_TAG}}'
         registry: '${{REGISTRY_PUBLISH_URL}}'
