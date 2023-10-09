@@ -1,0 +1,301 @@
+version: '1.0'
+stages:
+- prepare
+- build
+- unittest
+- deploy
+- qa
+- publish
+steps:
+  main_clone:
+    title: Clone main repository
+    type: git-clone
+    stage: prepare
+    repo: '${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}'
+    revision: '${{CF_BRANCH}}'
+    git: github
+  post_main_clone:
+    title: Post main clone
+    type: parallel
+    stage: prepare
+    steps:
+    - title: Cloning cloud-harness repository...
+      type: git-clone
+      stage: prepare
+      repo: https://github.com/MetaCell/cloud-harness.git
+      revision: '${{CLOUDHARNESS_BRANCH}}'
+      working_directory: .
+      git: github
+  prepare_deployment:
+    title: Prepare helm chart
+    image: python:3.9.10
+    stage: prepare
+    working_directory: .
+    commands:
+    - bash cloud-harness/install.sh
+    - harness-deployment cloud-harness . -d ${{DOMAIN}} -r ${{REGISTRY}} -rs ${{REGISTRY_SECRET}}
+      -n ${{NAMESPACE}} --write-env -e dev -i neuroglancer
+    - cat deployment/.env >> ${{CF_VOLUME_PATH}}/env_vars_to_export
+    - cat ${{CF_VOLUME_PATH}}/env_vars_to_export
+  prepare_deployment_view:
+    commands:
+    - helm template ./deployment/helm --debug -n ${{NAMESPACE}}
+    environment:
+    - ACTION=auth
+    - KUBE_CONTEXT=${{NAMESPACE}}
+    image: codefresh/cfstep-helm:3.6.2
+    stage: prepare
+    title: View helm chart
+  build_base_images:
+    title: Build base images
+    type: parallel
+    stage: build
+    steps:
+      cloudharness-base:
+        type: build
+        stage: build
+        dockerfile: infrastructure/base-images/cloudharness-base/Dockerfile
+        registry: '${{CODEFRESH_REGISTRY}}'
+        buildkit: true
+        build_arguments:
+        - DOMAIN=${{DOMAIN}}
+        - NOCACHE=${{CF_BUILD_ID}}
+        - REGISTRY=${{REGISTRY}}/change me/
+        image_name: change me/cloudharness-base
+        title: Cloudharness base
+        working_directory: ./cloud-harness
+        tag: '${{CLOUDHARNESS_BASE_TAG}}'
+        when:
+          condition:
+            any:
+              buildDoesNotExist: includes('${{CLOUDHARNESS_BASE_TAG_EXISTS}}', '{{CLOUDHARNESS_BASE_TAG_EXISTS}}')
+                == true
+              forceNoCache: includes('${{CLOUDHARNESS_BASE_TAG_FORCE_BUILD}}', '{{CLOUDHARNESS_BASE_TAG_FORCE_BUILD}}')
+                == false
+      cloudharness-frontend-build:
+        type: build
+        stage: build
+        dockerfile: infrastructure/base-images/cloudharness-frontend-build/Dockerfile
+        registry: '${{CODEFRESH_REGISTRY}}'
+        buildkit: true
+        build_arguments:
+        - DOMAIN=${{DOMAIN}}
+        - NOCACHE=${{CF_BUILD_ID}}
+        - REGISTRY=${{REGISTRY}}/change me/
+        image_name: change me/cloudharness-frontend-build
+        title: Cloudharness frontend build
+        working_directory: ./cloud-harness
+        tag: '${{CLOUDHARNESS_FRONTEND_BUILD_TAG}}'
+        when:
+          condition:
+            any:
+              buildDoesNotExist: includes('${{CLOUDHARNESS_FRONTEND_BUILD_TAG_EXISTS}}',
+                '{{CLOUDHARNESS_FRONTEND_BUILD_TAG_EXISTS}}') == true
+              forceNoCache: includes('${{CLOUDHARNESS_FRONTEND_BUILD_TAG_FORCE_BUILD}}',
+                '{{CLOUDHARNESS_FRONTEND_BUILD_TAG_FORCE_BUILD}}') == false
+      cloudharness-base-debian:
+        type: build
+        stage: build
+        dockerfile: infrastructure/base-images/cloudharness-base-debian/Dockerfile
+        registry: '${{CODEFRESH_REGISTRY}}'
+        buildkit: true
+        build_arguments:
+        - DOMAIN=${{DOMAIN}}
+        - NOCACHE=${{CF_BUILD_ID}}
+        - REGISTRY=${{REGISTRY}}/change me/
+        image_name: change me/cloudharness-base-debian
+        title: Cloudharness base debian
+        working_directory: ./cloud-harness
+        tag: '${{CLOUDHARNESS_BASE_DEBIAN_TAG}}'
+        when:
+          condition:
+            any:
+              buildDoesNotExist: includes('${{CLOUDHARNESS_BASE_DEBIAN_TAG_EXISTS}}',
+                '{{CLOUDHARNESS_BASE_DEBIAN_TAG_EXISTS}}') == true
+              forceNoCache: includes('${{CLOUDHARNESS_BASE_DEBIAN_TAG_FORCE_BUILD}}',
+                '{{CLOUDHARNESS_BASE_DEBIAN_TAG_FORCE_BUILD}}') == false
+  build_static_images:
+    title: Build static images
+    type: parallel
+    stage: build
+    steps:
+      cloudharness-flask:
+        type: build
+        stage: build
+        dockerfile: Dockerfile
+        registry: '${{CODEFRESH_REGISTRY}}'
+        buildkit: true
+        build_arguments:
+        - DOMAIN=${{DOMAIN}}
+        - NOCACHE=${{CF_BUILD_ID}}
+        - REGISTRY=${{REGISTRY}}/change me/
+        - CLOUDHARNESS_BASE=${{REGISTRY}}/change me/cloudharness-base:${{CLOUDHARNESS_BASE_TAG}}
+        image_name: change me/cloudharness-flask
+        title: Cloudharness flask
+        working_directory: ./cloud-harness/infrastructure/common-images/cloudharness-flask
+        tag: '${{CLOUDHARNESS_FLASK_TAG}}'
+        when:
+          condition:
+            any:
+              buildDoesNotExist: includes('${{CLOUDHARNESS_FLASK_TAG_EXISTS}}', '{{CLOUDHARNESS_FLASK_TAG_EXISTS}}')
+                == true
+              forceNoCache: includes('${{CLOUDHARNESS_FLASK_TAG_FORCE_BUILD}}', '{{CLOUDHARNESS_FLASK_TAG_FORCE_BUILD}}')
+                == false
+      cloudharness-django:
+        type: build
+        stage: build
+        dockerfile: Dockerfile
+        registry: '${{CODEFRESH_REGISTRY}}'
+        buildkit: true
+        build_arguments:
+        - DOMAIN=${{DOMAIN}}
+        - NOCACHE=${{CF_BUILD_ID}}
+        - REGISTRY=${{REGISTRY}}/change me/
+        - CLOUDHARNESS_BASE_DEBIAN=${{REGISTRY}}/change me/cloudharness-base-debian:${{CLOUDHARNESS_BASE_DEBIAN_TAG}}
+        image_name: change me/cloudharness-django
+        title: Cloudharness django
+        working_directory: ./cloud-harness/infrastructure/common-images/cloudharness-django
+        tag: '${{CLOUDHARNESS_DJANGO_TAG}}'
+        when:
+          condition:
+            any:
+              buildDoesNotExist: includes('${{CLOUDHARNESS_DJANGO_TAG_EXISTS}}', '{{CLOUDHARNESS_DJANGO_TAG_EXISTS}}')
+                == true
+              forceNoCache: includes('${{CLOUDHARNESS_DJANGO_TAG_FORCE_BUILD}}', '{{CLOUDHARNESS_DJANGO_TAG_FORCE_BUILD}}')
+                == false
+      cloudharness-fastapi:
+        type: build
+        stage: build
+        dockerfile: Dockerfile
+        registry: '${{CODEFRESH_REGISTRY}}'
+        buildkit: true
+        build_arguments:
+        - DOMAIN=${{DOMAIN}}
+        - NOCACHE=${{CF_BUILD_ID}}
+        - REGISTRY=${{REGISTRY}}/change me/
+        - CLOUDHARNESS_BASE_DEBIAN=${{REGISTRY}}/change me/cloudharness-base-debian:${{CLOUDHARNESS_BASE_DEBIAN_TAG}}
+        image_name: change me/cloudharness-fastapi
+        title: Cloudharness fastapi
+        working_directory: ./cloud-harness/infrastructure/common-images/cloudharness-fastapi
+        tag: '${{CLOUDHARNESS_FASTAPI_TAG}}'
+        when:
+          condition:
+            any:
+              buildDoesNotExist: includes('${{CLOUDHARNESS_FASTAPI_TAG_EXISTS}}',
+                '{{CLOUDHARNESS_FASTAPI_TAG_EXISTS}}') == true
+              forceNoCache: includes('${{CLOUDHARNESS_FASTAPI_TAG_FORCE_BUILD}}',
+                '{{CLOUDHARNESS_FASTAPI_TAG_FORCE_BUILD}}') == false
+  build_application_images:
+    type: parallel
+    stage: build
+    steps:
+      neuroglancer:
+        type: build
+        stage: build
+        dockerfile: Dockerfile
+        registry: '${{CODEFRESH_REGISTRY}}'
+        buildkit: true
+        build_arguments:
+        - DOMAIN=${{DOMAIN}}
+        - NOCACHE=${{CF_BUILD_ID}}
+        - REGISTRY=${{REGISTRY}}/change me/
+        image_name: change me/neuroglancer
+        title: Neuroglancer
+        working_directory: ./applications/neuroglancer
+        tag: '${{NEUROGLANCER_TAG}}'
+        when:
+          condition:
+            any:
+              buildDoesNotExist: includes('${{NEUROGLANCER_TAG_EXISTS}}', '{{NEUROGLANCER_TAG_EXISTS}}')
+                == true
+              forceNoCache: includes('${{NEUROGLANCER_TAG_FORCE_BUILD}}', '{{NEUROGLANCER_TAG_FORCE_BUILD}}')
+                == false
+  deployment:
+    stage: deploy
+    type: helm
+    working_directory: ./${{CF_REPO_NAME}}
+    title: Installing chart
+    arguments:
+      helm_version: 3.6.2
+      chart_name: deployment/helm
+      release_name: '${{NAMESPACE}}'
+      kube_context: '${{CLUSTER_NAME}}'
+      namespace: '${{NAMESPACE}}'
+      chart_version: '${{CF_BUILD_ID}}'
+      cmd_ps: --wait --timeout 600s --create-namespace
+      custom_value_files:
+      - ./deployment/helm/values.yaml
+      custom_values: []
+  approval:
+    type: pending-approval
+    stage: publish
+    title: Approve build
+    description: Approve build release and tagging
+    timeout:
+      duration: 168
+      finalState: denied
+  publish:
+    type: parallel
+    stage: publish
+    steps:
+      publish_cloudharness-base:
+        stage: publish
+        type: push
+        title: Cloudharness base
+        candidate: '${{REGISTRY}}/change me/cloudharness-base:${{CLOUDHARNESS_BASE_TAG}}'
+        tags:
+        - '${{DEPLOYMENT_PUBLISH_TAG}}'
+        registry: '${{REGISTRY_PUBLISH_URL}}'
+      publish_cloudharness-frontend-build:
+        stage: publish
+        type: push
+        title: Cloudharness frontend build
+        candidate: '${{REGISTRY}}/change me/cloudharness-frontend-build:${{CLOUDHARNESS_FRONTEND_BUILD_TAG}}'
+        tags:
+        - '${{DEPLOYMENT_PUBLISH_TAG}}'
+        registry: '${{REGISTRY_PUBLISH_URL}}'
+      publish_cloudharness-base-debian:
+        stage: publish
+        type: push
+        title: Cloudharness base debian
+        candidate: '${{REGISTRY}}/change me/cloudharness-base-debian:${{CLOUDHARNESS_BASE_DEBIAN_TAG}}'
+        tags:
+        - '${{DEPLOYMENT_PUBLISH_TAG}}'
+        registry: '${{REGISTRY_PUBLISH_URL}}'
+      publish_cloudharness-flask:
+        stage: publish
+        type: push
+        title: Cloudharness flask
+        candidate: '${{REGISTRY}}/change me/cloudharness-flask:${{CLOUDHARNESS_FLASK_TAG}}'
+        tags:
+        - '${{DEPLOYMENT_PUBLISH_TAG}}'
+        registry: '${{REGISTRY_PUBLISH_URL}}'
+      publish_cloudharness-django:
+        stage: publish
+        type: push
+        title: Cloudharness django
+        candidate: '${{REGISTRY}}/change me/cloudharness-django:${{CLOUDHARNESS_DJANGO_TAG}}'
+        tags:
+        - '${{DEPLOYMENT_PUBLISH_TAG}}'
+        registry: '${{REGISTRY_PUBLISH_URL}}'
+      publish_cloudharness-fastapi:
+        stage: publish
+        type: push
+        title: Cloudharness fastapi
+        candidate: '${{REGISTRY}}/change me/cloudharness-fastapi:${{CLOUDHARNESS_FASTAPI_TAG}}'
+        tags:
+        - '${{DEPLOYMENT_PUBLISH_TAG}}'
+        registry: '${{REGISTRY_PUBLISH_URL}}'
+      publish_neuroglancer:
+        stage: publish
+        type: push
+        title: Neuroglancer
+        candidate: '${{REGISTRY}}/change me/neuroglancer:${{NEUROGLANCER_TAG}}'
+        tags:
+        - '${{DEPLOYMENT_PUBLISH_TAG}}'
+        registry: '${{REGISTRY_PUBLISH_URL}}'
+    when:
+      condition:
+        all:
+          whenVarExists: includes("${{DEPLOYMENT_PUBLISH_TAG}}", "{{DEPLOYMENT_PUBLISH_TAG}}")
+            == false

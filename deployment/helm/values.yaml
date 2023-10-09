@@ -1,0 +1,95 @@
+apps:
+  neuroglancer:
+    harness:
+      aliases: []
+      dependencies:
+        build: []
+        hard: []
+        soft: []
+      deployment:
+        auto: true
+        image: change me/neuroglancer:ca766a2b1677e3bca1c127964ce29cde9bc4fef3
+        name: neuroglancer
+        port: 8080
+        replicas: 1
+        resources: &id001
+          limits: {cpu: 500m, memory: 500Mi}
+          requests: {cpu: 10m, memory: 32Mi}
+        volume: null
+      domain: null
+      livenessProbe: {path: /api/live}
+      name: neuroglancer
+      proxy:
+        payload: {max: null}
+        timeout: {keepalive: null, read: null, send: null}
+      readinessProbe: {path: /api/ready}
+      secrets: null
+      secured: false
+      sentry: false
+      service: {auto: true, name: neuroglancer, port: 8080}
+      subdomain: www
+      test:
+        api:
+          autotest: true
+          checks: [all]
+          enabled: false
+          runParams: []
+        e2e: {enabled: false, ignoreConsoleErrors: false, ignoreRequestErrors: false,
+          smoketest: true}
+        unit:
+          commands: []
+          enabled: true
+      uri_role_mapping:
+      - roles: [administrator]
+        uri: /*
+      - {uri: /api/openapi.json, white-listed: true}
+      - {uri: /openapi.json, white-listed: true}
+      use_services: []
+    image: change me/neuroglancer:ca766a2b1677e3bca1c127964ce29cde9bc4fef3
+    name: neuroglancer
+    port: 8080
+    resources: *id001
+    task-images: {}
+backup:
+  active: false
+  dir: /backups
+  keep_days: '7'
+  keep_months: '6'
+  keep_weeks: '4'
+  resources:
+    limits: {cpu: 50m, memory: 64Mi}
+    requests: {cpu: 25m, memory: 32Mi}
+  schedule: '*/5 * * * *'
+  suffix: .gz
+  volumesize: 2Gi
+domain: neuro.local
+env:
+- {name: CH_VERSION, value: 0.0.1}
+- {name: CH_CHART_VERSION, value: 0.0.1}
+- {name: CH_NEUROGLANCER_SUBDOMAIN, value: www}
+- {name: CH_NEUROGLANCER_NAME, value: neuroglancer}
+- {name: CH_DOMAIN, value: neuro.local}
+- {name: CH_IMAGE_REGISTRY, value: ''}
+- {name: CH_IMAGE_TAG, value: null}
+ingress:
+  enabled: true
+  letsencrypt: {email: filippo@metacell.us}
+  name: cloudharness-ingress
+  ssl_redirect: true
+local: false
+mainapp: accounts
+name: change me
+namespace: ng
+privenv:
+- {name: CH_SECRET, value: In God we trust; all others must bring data. ― W. Edwards
+    Deming}
+proxy:
+  payload: {max: 250}
+  timeout: {keepalive: 60, read: 60, send: 60}
+registry: {name: '', secret: ''}
+secured_gatekeepers: true
+tag: null
+task-images: {}
+test-images: {test-api: 'change me/test-api:40b5963f9a6912f9feab6abbf1ae7b1f374ee8e7',
+  test-e2e: 'change me/test-e2e:67489b588e101533ac57ddb9b5adec7f1cc5c524'}
+tls: true
