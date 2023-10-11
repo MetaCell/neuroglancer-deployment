@@ -1,0 +1,8 @@
+apiVersion: v2
+name: neuroglancer
+description: A Helm chart for deploying Neuroglancer
+type: application
+version: v0.1.0
+appVersion: v0.1.0
+maintainers:
+- {email: eutychus@metacell.us, name: Eutychus Towett}

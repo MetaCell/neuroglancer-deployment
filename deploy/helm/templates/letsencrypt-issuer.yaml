@@ -1,0 +1,16 @@
+{{- if .Values.tls }}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: letsencrypt-issuer
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email:  {{ .Values.ingress.letsencrypt.email }}
+    privateKeySecretRef:
+      name: tls-secret-issuer
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+{{ end }}
