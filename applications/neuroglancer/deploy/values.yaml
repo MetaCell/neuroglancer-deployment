@@ -1,13 +1,26 @@
 harness:
-  subdomain: www
-  secured: false
+  secured: open
   service:
-    port: 8080
     auto: true
+    name: neuroglancer
+    port: 80
   deployment:
     auto: true
-    port: 8080
+    replicas: 1
+    port: 80
+    resources:
+      limits: {cpu: 500m, memory: 512Mi}
+      requests: {cpu: 10m, memory: 32Mi}
   livenessProbe:
-    path: /api/live
+    path: /
   readinessProbe:
-    path: /api/ready
+    path: /
+  e2e:
+    enabled: false
+  secured_gatekeepers: false
+mainapp: neuroglancer
+ingress:
+  enabled: true
+  letsencrypt: {email: eutychus@metacell.us}
+  name: neuroglancer-ingress
+  ssl_redirect: true
