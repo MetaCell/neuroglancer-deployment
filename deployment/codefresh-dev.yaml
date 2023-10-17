@@ -60,7 +60,7 @@ steps:
         - DOMAIN=${{DOMAIN}}
         - NOCACHE=${{CF_BUILD_ID}}
         - REGISTRY=${{REGISTRY}}/neuroglancer/
-        - NEUROGLANCER_BRANCH_NAME=${{NEUROGLANCER_BRANCH_NAME}}
+        - NG_BRANCH_NAME=${{NG_BRANCH_NAME}}
         - FORCE_CLONE=${{FORCE_CLONE}}
         image_name: neuroglancer/neuroglancer
         title: Neuroglancer
