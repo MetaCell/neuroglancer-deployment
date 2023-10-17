@@ -4,6 +4,7 @@ RUN apk update && \
     rm /var/cache/apk/*
 ARG NEUROGLANCER_BRANCH_NAME=develop
 ARG FORCE_REBUILD=0
+ENV BRANCH_NAME=$NEUROGLANCER_BRANCH_NAME
 RUN git clone -b ${NEUROGLANCER_BRANCH_NAME} https://github.com/MetaCell/neuroglancer.git /usr/local/app
 WORKDIR /usr/local/app
 RUN npm install
