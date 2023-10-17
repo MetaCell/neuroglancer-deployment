@@ -1,5 +1,5 @@
 harness:
-  secured: open
+  secured: false
   service:
     auto: true
     name: neuroglancer
@@ -15,12 +15,12 @@ harness:
     path: /
   readinessProbe:
     path: /
-  e2e:
-    enabled: false
+  tests:
+    e2e:
+      enabled: false
+    unit:
+      enabled: false
+    api:
+      enabled: false
   secured_gatekeepers: false
-mainapp: neuroglancer
-ingress:
-  enabled: true
-  letsencrypt: {email: eutychus@metacell.us}
-  name: neuroglancer-ingress
-  ssl_redirect: true
+

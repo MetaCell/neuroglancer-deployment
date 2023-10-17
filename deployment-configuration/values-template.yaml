@@ -1,2 +1,6 @@
 domain: neuroglancer
 namespace: neuroglancer
+mainapp: neuroglancer
+ingress:
+  letsencrypt: {email: eutychus@metacell.us}
+  name: neuroglancer-ingress
