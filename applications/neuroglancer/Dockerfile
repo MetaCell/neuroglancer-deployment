@@ -3,7 +3,7 @@ RUN apk update && \
     apk add git && \
     rm /var/cache/apk/*
 ARG NG_BRANCH_NAME=develop
-ARG FORCE_REBUILD=0
+ARG FORCE_CLONE=0
 ENV BRANCH_NAME=$NG_BRANCH_NAME
 RUN git clone -b ${NG_BRANCH_NAME} https://github.com/MetaCell/neuroglancer.git /usr/local/app
 WORKDIR /usr/local/app
