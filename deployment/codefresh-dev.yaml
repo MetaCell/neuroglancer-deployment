@@ -2,9 +2,7 @@ version: '1.0'
 stages:
 - prepare
 - build
-- unittest
 - deploy
-- qa
 - publish
 steps:
   main_clone:
@@ -33,6 +31,7 @@ steps:
     working_directory: .
     commands:
     - bash cloud-harness/install.sh
+    - echo $(date) > $(pwd)/applications/neuroglancer/current_date
     - harness-deployment cloud-harness . -d ${{DOMAIN}} -r ${{REGISTRY}} -rs ${{REGISTRY_SECRET}}
       -n ${{NAMESPACE}} --write-env -e dev -i neuroglancer
     - cat deployment/.env >> ${{CF_VOLUME_PATH}}/env_vars_to_export
@@ -63,21 +62,14 @@ steps:
         - NG_BRANCH_NAME=${{NG_BRANCH_NAME}}
         - FORCE_CLONE=${{FORCE_CLONE}}
         image_name: neuroglancer/neuroglancer
-        title: Neuroglancer
+        title: Neuroglancer Build
         working_directory: ./applications/neuroglancer
         tag: '${{NEUROGLANCER_TAG}}'
-        when:
-          condition:
-            any:
-              buildDoesNotExist: includes('${{NEUROGLANCER_TAG_EXISTS}}', '{{NEUROGLANCER_TAG_EXISTS}}')
-                == true
-              forceNoCache: includes('${{NEUROGLANCER_TAG_FORCE_BUILD}}', '{{NEUROGLANCER_TAG_FORCE_BUILD}}')
-                == false
   deployment:
     stage: deploy
     type: helm
     working_directory: ./${{CF_REPO_NAME}}
-    title: Installing chart
+    title: Install Neuroglancer helm chart
     arguments:
       helm_version: 3.6.2
       chart_name: deployment/helm
@@ -89,28 +81,3 @@ steps:
       custom_value_files:
       - ./deployment/helm/values.yaml
       custom_values: []
-  approval:
-    type: pending-approval
-    stage: publish
-    title: Approve build
-    description: Approve build release and tagging
-    timeout:
-      duration: 168
-      finalState: denied
-  publish:
-    type: parallel
-    stage: publish
-    steps:
-      publish_neuroglancer:
-        stage: publish
-        type: push
-        title: Neuroglancer
-        candidate: '${{REGISTRY}}/neuroglancer/neuroglancer:${{NEUROGLANCER_TAG}}'
-        tags:
-        - '${{DEPLOYMENT_PUBLISH_TAG}}'
-        registry: '${{REGISTRY_PUBLISH_URL}}'
-    when:
-      condition:
-        all:
-          whenVarExists: includes("${{DEPLOYMENT_PUBLISH_TAG}}", "{{DEPLOYMENT_PUBLISH_TAG}}")
-            == false

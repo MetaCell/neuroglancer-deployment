@@ -9,7 +9,7 @@ harness:
     replicas: 1
     port: 80
     resources:
-      limits: {cpu: 500m, memory: 512Mi}
+      limits: {cpu: 4000m, memory: 8Gi}
       requests: {cpu: 10m, memory: 32Mi}
   livenessProbe:
     path: /
