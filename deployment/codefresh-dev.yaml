@@ -31,7 +31,6 @@ steps:
     working_directory: .
     commands:
     - bash cloud-harness/install.sh
-    - echo $(date) > $(pwd)/applications/neuroglancer/current_date
     - harness-deployment cloud-harness . -d ${{DOMAIN}} -r ${{REGISTRY}} -rs ${{REGISTRY_SECRET}}
       -n ${{NAMESPACE}} --write-env -e dev -i neuroglancer
     - cat deployment/.env >> ${{CF_VOLUME_PATH}}/env_vars_to_export
