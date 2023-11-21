@@ -2,7 +2,7 @@ FROM node:20-alpine as builder
 RUN apk update && \
     apk add git && \
     rm /var/cache/apk/*
-RUN echo "cache 2023-10-23"
+RUN echo "caches `date`"
 ARG NG_BRANCH_NAME=develop
 ARG FORCE_CLONE=0
 ENV BRANCH_NAME=$NG_BRANCH_NAME
