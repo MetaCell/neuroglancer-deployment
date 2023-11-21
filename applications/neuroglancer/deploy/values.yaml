@@ -1,13 +1,25 @@
 harness:
-  subdomain: www
   secured: false
   service:
-    port: 8080
     auto: true
+    name: neuroglancer
+    port: 80
   deployment:
     auto: true
-    port: 8080
+    replicas: 1
+    port: 80
+    resources:
+      limits: {cpu: 4000m, memory: 12Gi}
+      requests: {cpu: 10m, memory: 32Mi}
   livenessProbe:
-    path: /api/live
+    path: /
   readinessProbe:
-    path: /api/ready
+    path: /
+  tests:
+    e2e:
+      enabled: false
+    unit:
+      enabled: false
+    api:
+      enabled: false
+  secured_gatekeepers: false

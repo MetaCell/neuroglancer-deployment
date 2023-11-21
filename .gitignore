@@ -11,6 +11,7 @@ mnp-custom
 cloud-harness
 build
 skaffold.yaml
+deployment/helm
 /deployment.yaml
 /.run/
 *.egg-info

@@ -1,10 +1,18 @@
-FROM node:20 as build
+FROM node:20-alpine as builder
+RUN apk update && \
+    apk add git && \
+    rm /var/cache/apk/*
+RUN echo "cache 2023-10-23"
+ARG NG_BRANCH_NAME=develop
+ARG FORCE_CLONE=0
+ENV BRANCH_NAME=$NG_BRANCH_NAME
+RUN git clone -b ${NG_BRANCH_NAME} https://github.com/MetaCell/neuroglancer.git /usr/local/app
+WORKDIR /usr/local/app
+RUN npm install
+RUN npm run build
 
-RUN git clone https://github.com/metacell/neuroglancer
-
-# BUILD STEPS
-
-
-FROM nginx
-
-COPY --from build ...
+FROM nginx:1.25-alpine
+WORKDIR /usr/share/nginx/html
+RUN rm -rf ./*
+COPY --from=builder /usr/local/app/dist/min .
+CMD ["nginx", "-g", "daemon off;"]

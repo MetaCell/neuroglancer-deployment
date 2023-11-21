@@ -1,6 +1,0 @@
-harness:
-    users:
-    - username: neuroglancer
-      email: neuroglancer@testuser.com
-      clientRoles: []
-      realmRoles: []
