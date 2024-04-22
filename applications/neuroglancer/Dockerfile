@@ -14,5 +14,5 @@ RUN npm run build
 FROM nginx:1.25-alpine
 WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
-COPY --from=builder /usr/local/app/dist/min .
+COPY --from=builder /usr/local/app/dist/client .
 CMD ["nginx", "-g", "daemon off;"]
