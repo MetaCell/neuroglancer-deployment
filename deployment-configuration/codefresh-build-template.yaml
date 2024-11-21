@@ -6,5 +6,3 @@ buildkit: true
 build_arguments:
   - DOMAIN=${{DOMAIN}}
   - NOCACHE=${{CF_BUILD_ID}}
-  - NG_BRANCH_NAME=${{NG_BRANCH_NAME}}
-  - FORCE_CLONE=${{FORCE_CLONE}}

@@ -2,18 +2,18 @@ version: '1.0'
 stages:
 - prepare
 - build
+- unittest
 - deploy
+- qa
 - publish
 steps:
-  neuroglancer_deploy_clone:
-    title: Clone neuroglancer-deployment repository
+  main_clone:
+    title: Clone main repository
     type: git-clone
     stage: prepare
-    repo: 'MetaCell/neuroglancer-deployment'
-    revision: 'master'
+    repo: '${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}'
+    revision: '${{CF_BRANCH}}'
     git: github
-    working_directory: .
-
   post_main_clone:
     title: Post main clone
     type: parallel
@@ -26,21 +26,17 @@ steps:
       revision: '${{CLOUDHARNESS_BRANCH}}'
       working_directory: .
       git: github
-
   prepare_deployment:
     title: Prepare helm chart
-    image: python:3.9.10
+    image: python:3.12
     stage: prepare
     working_directory: .
     commands:
-    - cp -r neuroglancer-deployment/* . || true
-    - echo $(date) > $(pwd)/applications/neuroglancer/current_date
     - bash cloud-harness/install.sh
     - harness-deployment cloud-harness . -d ${{DOMAIN}} -r ${{REGISTRY}} -rs ${{REGISTRY_SECRET}}
       -n ${{NAMESPACE}} --write-env -e dev -i neuroglancer
     - cat deployment/.env >> ${{CF_VOLUME_PATH}}/env_vars_to_export
     - cat ${{CF_VOLUME_PATH}}/env_vars_to_export
-    
   prepare_deployment_view:
     commands:
     - helm template ./deployment/helm --debug -n ${{NAMESPACE}}
@@ -50,40 +46,27 @@ steps:
     image: codefresh/cfstep-helm:3.6.2
     stage: prepare
     title: View helm chart
-
-  build_application_images:
-    type: parallel
-    stage: build
-    steps:
-      neuroglancer:
-        type: build
-        stage: build
-        dockerfile: Dockerfile
-        registry: '${{CODEFRESH_REGISTRY}}'
-        buildkit: true
-        build_arguments:
-        - DOMAIN=${{DOMAIN}}
-        - NOCACHE=${{CF_BUILD_ID}}
-        - REGISTRY=${{REGISTRY}}/neuroglancer/
-        - NG_BRANCH_NAME=${{CF_BRANCH}}
-        - FORCE_CLONE=${{FORCE_CLONE}}
-        image_name: neuroglancer/neuroglancer
-        title: Neuroglancer Build
-        working_directory: ./neuroglancer-deployment/applications/neuroglancer
-        tag: '${{NEUROGLANCER_TAG}}'
-
   deployment:
     stage: deploy
     type: helm
-    title: Install Neuroglancer helm chart
+    working_directory: ./${{CF_REPO_NAME}}
+    title: Installing chart
     arguments:
       helm_version: 3.6.2
-      chart_name: ./deployment/helm
+      chart_name: deployment/helm
       release_name: '${{NAMESPACE}}'
       kube_context: '${{CLUSTER_NAME}}'
       namespace: '${{NAMESPACE}}'
       chart_version: '${{CF_BUILD_ID}}'
       cmd_ps: --wait --timeout 600s --create-namespace
       custom_value_files:
-      - ./neuroglancer-deployment/applications/neuroglancer/deploy/values-dev.yaml
+      - ./deployment/helm/values.yaml
       custom_values: []
+  approval:
+    type: pending-approval
+    stage: publish
+    title: Approve build
+    description: Approve build release and tagging
+    timeout:
+      duration: 168
+      finalState: denied
