@@ -22,4 +22,8 @@ harness:
       enabled: false
     api:
       enabled: false
+  dependencies:
+    git:
+    - url: https://github.com/MetaCell/neuroglancer.git
+      branch_tag: cryoet-demo
   secured_gatekeepers: false
