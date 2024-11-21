@@ -11,8 +11,8 @@ steps:
     title: Clone main repository
     type: git-clone
     stage: prepare
-    repo: '${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}'
-    revision: '${{CF_BRANCH}}'
+    repo: MetaCell/neuroglancer-deployment
+    revision: czi
     git: github
   post_main_clone:
     title: Post main clone
