@@ -1,4 +1,6 @@
-FROM node:20-alpine as builder
+ARG CLOUDHARNESS_FRONTEND_BUILD
+
+FROM $CLOUDHARNESS_FRONTEND_BUILD as builder
 WORKDIR /usr/local/app
 
 # Copy the dependencies directory
