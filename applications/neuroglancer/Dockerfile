@@ -4,7 +4,7 @@ FROM $CLOUDHARNESS_FRONTEND_BUILD as builder
 WORKDIR /usr/local/app
 
 # Copy the dependencies directory
-COPY dependencies .
+COPY dependencies/neuroglancer .
 
 # Install dependencies
 RUN npm install
