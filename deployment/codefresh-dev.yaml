@@ -30,15 +30,14 @@ steps:
 
   prepare_deployment:
     title: Prepare helm chart
-    image: python:3.9.10
+    image: python:3.12
     stage: prepare
     working_directory: .
     commands:
     - cp -r neuroglancer-deployment/* . || true
     - echo $(date) > $(pwd)/applications/neuroglancer/current_date
     - bash cloud-harness/install.sh
-    - 'harness-deployment cloud-harness . -d ${{DOMAIN}} -r ${{REGISTRY}} -rs ${{REGISTRY_SECRET}}
-      -n ${{NAMESPACE}} --write-env -e dev -i neuroglancer '
+    - harness-deployment cloud-harness . -d ${{DOMAIN}} -r ${{REGISTRY}} -rs ${{REGISTRY_SECRET}} -n ${{NAMESPACE}} --write-env -e dev -i neuroglancer
     - cat deployment/.env >> ${{CF_VOLUME_PATH}}/env_vars_to_export
     - cat ${{CF_VOLUME_PATH}}/env_vars_to_export
     
