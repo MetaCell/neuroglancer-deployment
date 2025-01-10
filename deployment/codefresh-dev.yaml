@@ -31,7 +31,7 @@ steps:
         title: Cloning neuroglancer.git repository...
         type: git-clone
         repo: https://github.com/MetaCell/neuroglancer.git
-        revision: cryoet-demo
+        revision: '${{NEUROGLANCER_BRANCH}}'
         working_directory: applications/neuroglancer/dependencies/
         git: github
   prepare_deployment:
