@@ -1,4 +1,4 @@
-FROM node:20-alpine as builder
+FROM node:22-alpine as builder
 RUN apk update && \
     apk add git && \
     rm /var/cache/apk/*
